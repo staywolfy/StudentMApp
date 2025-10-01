@@ -1,8 +1,8 @@
 // controllers/studentController.js
-import db from "../utils/db.js";
+//import db from "../utils/db.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import fetch from "node-fetch"; 
+import fetch from "node-fetch";
 
 dotenv.config();
 
@@ -14,7 +14,9 @@ export const login = async (req, res) => {
   console.log("Login attempt from:", username);
 
   if (!username || !password) {
-    return res.status(400).json({ message: "Username and password are required." });
+    return res
+      .status(400)
+      .json({ message: "Username and password are required." });
   }
 
   if (!captchaToken) {
@@ -26,17 +28,22 @@ export const login = async (req, res) => {
     params.append("secret", RECAPTCHA_SECRET);
     params.append("response", captchaToken);
 
-    const response = await fetch("https://www.google.com/recaptcha/api/siteverify", {
-      method: "POST",
-      body: params
-    });
+    const response = await fetch(
+      "https://www.google.com/recaptcha/api/siteverify",
+      {
+        method: "POST",
+        body: params,
+      }
+    );
 
     const data = await response.json();
     if (!data.success) {
       return res.status(401).json({ message: "CAPTCHA verification failed." });
     }
   } catch (err) {
-    return res.status(500).json({ message: "CAPTCHA verification service error." });
+    return res
+      .status(500)
+      .json({ message: "CAPTCHA verification service error." });
   }
 
   try {
@@ -52,26 +59,36 @@ export const login = async (req, res) => {
     }
 
     const user = rows[0];
-    const token = jwt.sign({ id: user.id, name_contactid: user.name_contactid }, JWT_SECRET, {
-      expiresIn: "30d",
-    });
+    const token = jwt.sign(
+      { id: user.id, name_contactid: user.name_contactid },
+      JWT_SECRET,
+      {
+        expiresIn: "30d",
+      }
+    );
 
     return res.json({ token, user });
   } catch (err) {
-    return res.status(500).json({ message: "Login failed due to server error." });
+    return res
+      .status(500)
+      .json({ message: "Login failed due to server error." });
   }
 };
 
 export const logout = (req, res) => {
-  return res.status(200).json({ message: "Logged out successfully.", success: true });
+  return res
+    .status(200)
+    .json({ message: "Logged out successfully.", success: true });
 };
 
 export const authenticateJWT = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
-  if (!token) return res.status(401).json({ message: "Unauthorized: No token provided" });
+  if (!token)
+    return res.status(401).json({ message: "Unauthorized: No token provided" });
 
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(403).json({ message: "Forbidden: Invalid token" });
+    if (err)
+      return res.status(403).json({ message: "Forbidden: Invalid token" });
     req.user = decoded;
     next();
   });
@@ -99,12 +116,14 @@ export const getBatch = async (req, res) => {
 
 export const getBatchTimings = async (req, res) => {
   const { name_contactid } = req.user;
-  if (!name_contactid) return res.status(400).json({ message: "User not authenticated" });
+  if (!name_contactid)
+    return res.status(400).json({ message: "User not authenticated" });
 
-  const sql = "SELECT DISTINCT batchtime, Subject, course FROM attendence WHERE name = ?";
+  const sql =
+    "SELECT DISTINCT batchtime, Subject, course FROM attendence WHERE name = ?";
   try {
     const [results] = await db.query(sql, [name_contactid]);
-    const batchTimings = results.map(row => row.batchtime);
+    const batchTimings = results.map((row) => row.batchtime);
     res.json(batchTimings);
   } catch (err) {
     return res.status(500).json({ message: "Database error" });
@@ -113,7 +132,8 @@ export const getBatchTimings = async (req, res) => {
 
 export const getBatchTimetable = async (req, res) => {
   const { name_contactid } = req.user;
-  if (!name_contactid) return res.status(400).json({ message: "User not authenticated" });
+  if (!name_contactid)
+    return res.status(400).json({ message: "User not authenticated" });
 
   const sql = `SELECT DISTINCT batch_time, faculty, course, subject, startdate, enddate FROM faculty_student WHERE nameid = ?`;
   try {
@@ -129,7 +149,9 @@ export const getAttendance = async (req, res) => {
   const { name_contactid } = req.user;
 
   if (!batchtime || !name_contactid || !Subject) {
-    return res.status(400).json({ message: "Missing batchtime, subject, or user info." });
+    return res
+      .status(400)
+      .json({ message: "Missing batchtime, subject, or user info." });
   }
 
   const sql = `SELECT DISTINCT a.date, a.topic, a.attendence, a.Subject AS subject_name, a.batchtime, 
@@ -152,7 +174,8 @@ export const getAttendance = async (req, res) => {
 
 export const getFeeDetails = async (req, res) => {
   const { name_contactid } = req.user;
-  if (!name_contactid) return res.status(400).json({ message: "User not authenticated" });
+  if (!name_contactid)
+    return res.status(400).json({ message: "User not authenticated" });
 
   const sql = `SELECT DISTINCT Receipt, name, course, Recieve, Dates, ModeOfPayement, courseFees, Paid, Balance, status, totalfees, course FROM payement WHERE name_contactid = ?`;
 
@@ -166,7 +189,8 @@ export const getFeeDetails = async (req, res) => {
 
 export const getCourse = async (req, res) => {
   const { name_contactid } = req.user;
-  if (!name_contactid) return res.status(400).json({ message: "User not authenticated" });
+  if (!name_contactid)
+    return res.status(400).json({ message: "User not authenticated" });
 
   const sql = `SELECT DISTINCT s.subjectname, s.coursename AS course, COALESCE(fs2.status, 'Pending') AS status
               FROM subject s
@@ -183,7 +207,8 @@ export const getCourse = async (req, res) => {
 
 export const getMarks = async (req, res) => {
   const { name_contactid } = req.user;
-  if (!name_contactid) return res.status(400).json({ message: "User not authenticated" });
+  if (!name_contactid)
+    return res.status(400).json({ message: "User not authenticated" });
 
   const courseQuery = `SELECT DISTINCT fs.course FROM faculty_student fs WHERE fs.nameid = ?`;
   const marksQuery = `SELECT fs.subject AS subjectname, fs.course, sm.subject AS sm_subject, sm.marks_outoff, DATE_FORMAT(sm.exam_date, '%d-%m-%Y') AS exam_date, sm.marks_obtain
@@ -192,10 +217,13 @@ export const getMarks = async (req, res) => {
                       WHERE fs.nameid = ?`;
   try {
     const [courseResults] = await db.query(courseQuery, [name_contactid]);
-    const [marksResults] = await db.query(marksQuery, [name_contactid, name_contactid]);
+    const [marksResults] = await db.query(marksQuery, [
+      name_contactid,
+      name_contactid,
+    ]);
 
-    const courses = courseResults.map(row => row.course);
-    const subjects = marksResults.map(row => ({
+    const courses = courseResults.map((row) => row.course);
+    const subjects = marksResults.map((row) => ({
       subjectname: row.subjectname,
       course: row.course,
       status: row.sm_subject ? "Completed" : "Pending",
@@ -211,23 +239,61 @@ export const getMarks = async (req, res) => {
 };
 
 export const updateProfile = async (req, res) => {
-  const { name, contact, course, address, branch, password, status, EmailId, username } = req.body;
+  const {
+    name,
+    contact,
+    course,
+    address,
+    branch,
+    password,
+    status,
+    EmailId,
+    username,
+  } = req.body;
   const { id } = req.user;
 
   let updateFields = [];
   let updateValues = [];
 
-  if (name) { updateFields.push("name = ?"); updateValues.push(name); }
-  if (contact) { updateFields.push("contact = ?"); updateValues.push(contact); }
-  if (username) { updateFields.push("username = ?"); updateValues.push(username); }
-  if (course) { updateFields.push("course = ?"); updateValues.push(course); }
-  if (address) { updateFields.push("address = ?"); updateValues.push(address); }
-  if (branch) { updateFields.push("branch = ?"); updateValues.push(branch); }
-  if (password) { updateFields.push("password = ?"); updateValues.push(password); }
-  if (status) { updateFields.push("status = ?"); updateValues.push(status); }
-  if (EmailId) { updateFields.push("EmailId = ?"); updateValues.push(EmailId); }
+  if (name) {
+    updateFields.push("name = ?");
+    updateValues.push(name);
+  }
+  if (contact) {
+    updateFields.push("contact = ?");
+    updateValues.push(contact);
+  }
+  if (username) {
+    updateFields.push("username = ?");
+    updateValues.push(username);
+  }
+  if (course) {
+    updateFields.push("course = ?");
+    updateValues.push(course);
+  }
+  if (address) {
+    updateFields.push("address = ?");
+    updateValues.push(address);
+  }
+  if (branch) {
+    updateFields.push("branch = ?");
+    updateValues.push(branch);
+  }
+  if (password) {
+    updateFields.push("password = ?");
+    updateValues.push(password);
+  }
+  if (status) {
+    updateFields.push("status = ?");
+    updateValues.push(status);
+  }
+  if (EmailId) {
+    updateFields.push("EmailId = ?");
+    updateValues.push(EmailId);
+  }
 
-  if (updateFields.length === 0) return res.status(400).json({ message: "No fields to update" });
+  if (updateFields.length === 0)
+    return res.status(400).json({ message: "No fields to update" });
 
   updateValues.push(id);
   const sql = `UPDATE student SET ${updateFields.join(", ")} WHERE id = ?`;
